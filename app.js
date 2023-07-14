@@ -18,7 +18,7 @@ const initializeDbAndServer = async () => {
   try {
     db = await open({
       filename: dbPath,
-      driver: sqlite3,
+      driver: sqlite3.Database,
     });
     app.listen(3000, () => {
       console.log("Server running at http://localhost:3000/");
@@ -76,7 +76,7 @@ const authenticateToken = (request, response, next) => {
     response.status(401);
     response.send("Invalid JWT Token");
   } else {
-    jwt.verify(jwtToken, "SECRET_KEY", (error, payload) => {
+    jwt.verify(jwtToken, "SECRET_KEY", async (error, payload) => {
       if (error) {
         response.status(401);
         response.send("Invalid JWT Token");
@@ -91,7 +91,9 @@ const authenticateToken = (request, response, next) => {
 app.get("/states/", authenticateToken, async (request, response) => {
   const getAllStatesQuery = `
     SELECT 
-        * 
+        state_id,
+        state_name,
+        population 
     FROM 
         state
     ORDER BY 
@@ -191,7 +193,7 @@ app.put(
     SET 
         district_name = '${districtName}',
         state_id = ${stateId},
-        cases = ${stateId},
+        cases = ${cases},
         cured = ${cured},
         active = ${active},
         deaths = ${deaths}
@@ -220,7 +222,9 @@ app.get(
     FROM 
         state
     WHERE 
-        state_id = ${stateId};
+        state_id = ${stateId}
+    GROUP BY 
+        state_id;
     `;
     const stateStats = await db.all(getStateStatsQuery);
     response.send(stateStats);
